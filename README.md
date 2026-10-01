@@ -1,5 +1,7 @@
 # AI Reputation Guard
 
+[![CI](https://github.com/yunaremaia/ai-reputation-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/yunaremaia/ai-reputation-guard/actions/workflows/ci.yml)
+
 > Detect AI-assisted reputation laundering on GitHub — scan accounts for high-volume trivial PR patterns, timing heuristics, and cross-repo attribution signals that indicate gaming of OSS reputation systems.
 
 ## Problem
