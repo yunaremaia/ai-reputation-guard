@@ -19,7 +19,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.11", "3.12", "3.13"]
+        # Every version setup.py claims to support, oldest through newest.
+        # Keep this in step with python_requires; tests/test_ci_matrix.py
+        # fails when the two disagree. 3.10 was declared-supported but was
+        # missing here, so it was never exercised by anything (#15).
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4

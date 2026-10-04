@@ -18,7 +18,7 @@ setup(
             "ai-reputation-guard=ai_reputation_guard.cli:main",
         ],
     },
-    python_requires=">=3.9",
+    python_requires=">=3.9,<3.15",
     author="Yunare Maia",
     description="Detect AI-assisted reputation laundering on GitHub",
     license="MIT",
