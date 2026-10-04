@@ -8,8 +8,8 @@ implemented, and they touch no network.
 
 import pytest
 
-from src import __version__
-from src import cli
+from ai_reputation_guard import __version__
+from ai_reputation_guard import cli
 
 
 def run_cli():

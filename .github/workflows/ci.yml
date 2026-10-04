@@ -33,7 +33,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .
-          python -m pip install pytest
+          # tests/test_packaging.py builds a real wheel to assert what the
+          # install actually puts on sys.path. pip's build isolation does not
+          # leave a build backend in the environment, so setuptools/wheel are
+          # declared explicitly as test dependencies.
+          python -m pip install pytest setuptools wheel
 
       - name: Run test suite
-        run: python -m pytest tests/ -v
+        # Deliberately the `pytest` console script, not `python -m pytest`.
+        # The `-m` form implicitly prepends the cwd to sys.path, which masked
+        # the no-op conftest guard (#12): the suite imported even though
+        # nothing in the repo put the package on the path. The console script
+        # exercises tests/conftest.py the way a contributor's terminal does.
+        run: pytest tests/ -v
