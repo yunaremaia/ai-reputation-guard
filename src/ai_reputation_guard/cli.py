@@ -1,7 +1,11 @@
 """CLI entry point for ai-reputation-guard."""
 import argparse
 import math
+import os
 import sys
+from pathlib import Path
+
+from ai_reputation_guard import scanner
 
 
 def _positive_int(value):
@@ -41,6 +45,53 @@ def _ratio(value):
     return parsed
 
 
+def _write(text, output):
+    """Print ``text``, or write it to ``output`` if a path was given.
+
+    Returns False when the destination cannot be written, so a "successful"
+    scan cannot exit 0 while leaving no artifact behind (#19).
+    """
+    if not output:
+        print(text)
+        return True
+    path = Path(output)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text + "\n", encoding="utf-8")
+    except OSError as exc:
+        print(f"error: cannot write report to {path}: {exc}", file=sys.stderr)
+        return False
+    print(f"Report written to {path}")
+    return True
+
+
+def _run_scan(args):
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    try:
+        data = scanner.fetch_account(args.username, args.days, token=token)
+    except scanner.ScanError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    report = scanner.analyze(
+        data["prs"],
+        data["issues_opened"],
+        username=data["user"].get("login", args.username),
+        days=args.days,
+        pr_threshold=args.pr_threshold,
+        trivial_ratio=args.trivial_ratio,
+    )
+    if not report["signals_collected"]:
+        # Nothing to judge. Exiting 0 here would read as "this account is clean".
+        print(
+            f"error: no signals collected for {report['username']} in the last "
+            f"{args.days} days (0 merged PRs, 0 issues); nothing was scanned",
+            file=sys.stderr,
+        )
+        return 1
+    return 0 if _write(scanner.render(report, args.format), args.output) else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="ai-reputation-guard",
@@ -69,7 +120,12 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    print(f"[ai-reputation-guard] Command '{args.command}' recognized — implement scanner logic next.")
+    if args.command == "scan":
+        sys.exit(_run_scan(args))
+
+    # `batch` is still a stub (#7); it says so, in ASCII, and stops there.
+    print(f"[ai-reputation-guard] Command '{args.command}' recognized - "
+          f"batch scanning is not implemented yet, see issue #7.")
 
 
 if __name__ == "__main__":

@@ -9,9 +9,9 @@ setup(
     # src-layout project in the same environment (#11).
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    # The CLI is built on stdlib argparse and makes no network calls, so it
-    # needs nothing from PyPI. `requests` becomes real in #6/#7, when the
-    # scanner starts calling the GitHub API; add it in that commit (#14).
+    # The CLI is stdlib argparse and the scanner is stdlib urllib.request, so
+    # it needs nothing from PyPI. The project deliberately dropped its unused
+    # dependencies in #17; do not add one back without a caller for it.
     install_requires=[],
     entry_points={
         "console_scripts": [

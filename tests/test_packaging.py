@@ -179,7 +179,8 @@ def test_wheel_ships_the_package_as_a_named_import_path(tmp_path):
         names = set(archive.namelist())
 
     shipped = {n for n in names if n.endswith(".py") and not n.startswith(f"{PACKAGE_NAME}.dist-info")}
-    assert shipped == {f"{PACKAGE_NAME}/__init__.py", f"{PACKAGE_NAME}/cli.py"}, (
+    assert shipped == {f"{PACKAGE_NAME}/__init__.py", f"{PACKAGE_NAME}/cli.py",
+                       f"{PACKAGE_NAME}/scanner.py"}, (
         f"unexpected shipped modules: {sorted(shipped)}"
     )
 
