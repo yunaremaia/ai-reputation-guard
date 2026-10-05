@@ -34,8 +34,7 @@ The score is the sum of the weights that fired, clamped to 1.0, and the verdict
 is `HIGH` at 0.6+, `MEDIUM` at 0.3+, `LOW` below.
 
 **The score is a heuristic, not a validated model.** The weights are a
-first-pass judgement call; there is no benchmark behind them yet
-(tracked in [#8](https://github.com/yunaremaia/ai-reputation-guard/issues/8)).
+first-pass judgement call; there is no benchmark behind them yet.
 Treat a HIGH score as "worth a human look", never as a verdict on a person.
 
 Known limits of the current implementation:
@@ -46,6 +45,10 @@ Known limits of the current implementation:
   100 merged PRs is truncated at 100.
 - Issue *comments*, reviews and discussions are not collected; "no follow-up"
   counts issues opened only.
+- An account with zero merged PRs but some issues opened reports `0.00 (LOW)`
+  and exits 0, because all five signals are PR-derived ([#23](https://github.com/yunaremaia/ai-reputation-guard/issues/23)).
+- `--days` has no upper bound; a very large window raises `OverflowError`
+  ([#22](https://github.com/yunaremaia/ai-reputation-guard/issues/22)).
 
 ## Install
 
@@ -71,10 +74,11 @@ ai-reputation-guard scan yunaremaia
 # Scan with custom thresholds
 ai-reputation-guard scan someuser --pr-threshold 15 --trivial-ratio 0.6
 
-# Output JSON for CI (writes the report to the file; nothing else is printed)
+# Output JSON for CI (report goes to the file; stdout gets one confirmation line)
 ai-reputation-guard scan someuser --format json --output report.json
 
-# Batch scan (for org security teams)
+# Batch scan (for org security teams) -- NOT IMPLEMENTED YET (#7): the command
+# parses and exits 0 without scanning or writing --output.
 ai-reputation-guard batch --members-file members.txt --format sarif --output guard.sarif
 ```
 
@@ -94,7 +98,7 @@ Issues opened:  2626
 Signals:
   - volume_burst: 74 PRs merged inside 24h (threshold 10)
   - cross_repo_dispersion: 26 distinct repositories in 30 days (threshold 15)
-Note:           heuristic score, not a validated model (see issue #8)
+Note:           heuristic score, not a validated model (see README)
 ```
 
 ## Exit codes
@@ -139,7 +143,7 @@ socket-error path is exercised deterministically.
 - [ ] Mechanical-timing signal (PRs opened at regular intervals)
 - [ ] Diff-level triviality classification
 - [ ] Result caching and rate-limit budgeting (#6)
-- [ ] Benchmark the scoring weights against labelled accounts (#8)
+- [ ] Benchmark the scoring weights against labelled accounts
 - [ ] GitHub Action integration (scan on new contributor)
 - [ ] Sliding-window trend detection (sudden volume spikes)
 - [ ] Baseline mode (suppress known-good accounts)

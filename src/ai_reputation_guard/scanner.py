@@ -5,7 +5,7 @@ unknown account fails loudly instead of scoring as empty), merged pull requests
 in the window, and issues opened in the window.
 
 The score is a **heuristic**, not a validated model: the weights below are a
-first-pass judgement call, not the output of a benchmark. See issue #8.
+first-pass judgement call, not the output of a benchmark.
 """
 
 import json
@@ -268,7 +268,7 @@ def _render_cli(report):
         lines.extend(f"  - {s['name']}: {s['detail']}" for s in report["signals"])
     else:
         lines.append("Signals:        none")
-    lines.append("Note:           heuristic score, not a validated model (see issue #8)")
+    lines.append("Note:           heuristic score, not a validated model (see README)")
     return "\n".join(lines)
 
 
