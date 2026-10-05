@@ -208,6 +208,13 @@ def test_issue_count_is_reported():
     assert report["issues_opened"] == 3
 
 
+def test_signals_collected_counts_prs_not_issues():
+    """#23: every signal is PR-derived, so issues opened cannot count toward it."""
+    assert analyze([], issues_opened=3)["signals_collected"] == 0
+    assert analyze([pr("2024-05-02T10:00:00Z", "2024-05-02T09:00:00Z")],
+                   issues_opened=3)["signals_collected"] == 1
+
+
 def test_volume_burst_fires_above_the_threshold():
     burst = [pr(f"2024-05-02T{h:02d}:00:00Z", "2024-05-02T00:00:00Z", number=h) for h in range(12)]
     report = analyze(burst)

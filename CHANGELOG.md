@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `--days` is bounded at 3650 days. A larger window overflowed `timedelta` (or,
+  for smaller values, the `date` subtraction) and escaped as an unhandled
+  `OverflowError` traceback with exit 1, the same exit code as a real scan
+  failure. It is now rejected by the parser with exit 2, like the other
+  out-of-domain arguments.
+- The emptiness gate counts merged PRs only. Issues opened are the one API row
+  type no signal consumes, so an account that files issues but merges nothing
+  cleared the gate and printed `Score: 0.00 (LOW)` with exit 0. Such a window
+  now reports "nothing was scanned" and exits 1.
+
 ## [0.1.0] - 2026-10-05
 
 First release. `scan` queries the GitHub API for real data and scores five
