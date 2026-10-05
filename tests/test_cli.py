@@ -13,6 +13,7 @@ import pytest
 
 from ai_reputation_guard import __version__
 from ai_reputation_guard import cli
+from ai_reputation_guard import scanner
 
 
 def run_cli():
@@ -246,6 +247,29 @@ def test_scan_accepts_in_domain_trivial_ratio(cli_args, stub_api, capsys, value)
     assert "Score" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("value", ["1000000", "1000000000"])
+def test_scan_rejects_out_of_range_days(cli_args, capsys, value):
+    """#22: an unbounded ``--days`` reached ``timedelta``/``date`` and escaped as
+    a traceback with exit 1, the same code as a legitimate scan failure.
+
+    Both ceilings are real and neither is the other: 1000000000 overflows
+    ``timedelta``, 1000000 overflows ``date.today() - timedelta(...)``.
+    """
+    cli_args(["scan", "octocat", "--days", value])
+    assert run_cli() == 2
+    captured = capsys.readouterr()
+    assert "must be at most" in captured.err
+    assert f"got {int(value)}" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_scan_accepts_the_largest_allowed_window(cli_args, stub_api):
+    """The bound is inclusive: the ceiling itself is a legitimate window."""
+    cli_args(["scan", "octocat", "--days", str(scanner.MAX_WINDOW_DAYS)])
+    assert run_cli() == 0
+    assert stub_api["calls"][0][1] == scanner.MAX_WINDOW_DAYS
+
+
 @pytest.mark.parametrize("value", ["0", "-1", "-5"])
 def test_scan_rejects_non_positive_days(cli_args, capsys, value):
     cli_args(["scan", "octocat", "--days", value])
@@ -388,6 +412,22 @@ def test_scan_with_no_signals_exits_nonzero(cli_args, stub_api, tmp_path, capsys
     """Zero PRs and zero issues is a scan that saw nothing, not a clean account."""
     stub_api["prs"] = []
     stub_api["issues"] = 0
+    report = tmp_path / "report.json"
+    cli_args(["scan", "octocat", "--output", str(report)])
+    assert run_cli() == 1
+    assert "no signals" in capsys.readouterr().err.lower()
+    assert not report.exists()
+
+
+def test_scan_with_issues_but_no_prs_exits_nonzero(cli_args, stub_api, tmp_path, capsys):
+    """#23: issues opened are the one API row type no signal can consume, so an
+    issue-only account must not clear the emptiness gate with Score 0.00 (LOW).
+
+    The existing both-zero test above does not pin this: ``total + issues_opened``
+    only reaches 0 when neither term is set.
+    """
+    stub_api["prs"] = []
+    stub_api["issues"] = 3
     report = tmp_path / "report.json"
     cli_args(["scan", "octocat", "--output", str(report)])
     assert run_cli() == 1

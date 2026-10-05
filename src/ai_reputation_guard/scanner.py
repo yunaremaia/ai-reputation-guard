@@ -43,6 +43,12 @@ DISPERSION_REPO_THRESHOLD = 15
 SHALLOW_MERGE_MINUTES = 5.0
 TRIVIAL_RATIO = 0.7
 
+# Longest window ``fetch_account`` accepts. Two ceilings meet here and neither
+# is the other: ``timedelta`` caps at 999999999 days, and ``date.today() -
+# timedelta(...)`` caps at ~739893 days. Ten years is far inside both, and keeps
+# the ``since`` date inside what GitHub's search API accepts (#22).
+MAX_WINDOW_DAYS = 3650
+
 # Title-only heuristic for "mechanically correct, zero engineering value".
 # ponytail: matches the PR title, not the diff. Classifying the diff needs one
 # extra request per PR; add it when a title stops being good enough.
@@ -225,9 +231,12 @@ def analyze(prs, issues_opened, username="", days=30,
         "repos_touched": len(repo_names),
         "median_merge_minutes": median_minutes,
         "issues_opened": issues_opened,
-        # 0 here means the scan saw nothing at all, which the CLI reports as a
-        # failure rather than a clean bill of health.
-        "signals_collected": total + issues_opened,
+        # 0 here means the scan saw nothing any signal could use, which the CLI
+        # reports as a failure rather than a clean bill of health. Merged PRs
+        # are the only input every signal consumes, so issues opened cannot
+        # count here: with zero PRs all five are structurally unable to fire,
+        # whatever the issue count is (#23).
+        "signals_collected": total,
         "signals": signals,
         "score": score,
         "verdict": "HIGH" if score >= 0.6 else "MEDIUM" if score >= 0.3 else "LOW",

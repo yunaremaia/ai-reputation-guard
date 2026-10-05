@@ -8,12 +8,17 @@ from pathlib import Path
 from ai_reputation_guard import scanner
 
 
-def _positive_int(value):
+def _positive_int(value, maximum=None):
     """argparse ``type`` for a threshold that must be a whole number > 0.
 
     ``type=int`` alone only guarantees the token parses as a float; it happily
     accepts ``0`` and ``-5``. Those reach the scanner as thresholds that can
     never fire, so the domain is enforced here, at the parser.
+
+    ``maximum`` bounds the value from above for callers whose ceiling is lower
+    than "any positive int" -- ``--days`` alone, whose window is arithmetic on
+    ``date`` (#22). Shared by every caller that names a maximum, so the bound
+    cannot drift between them.
     """
     try:
         parsed = int(value)
@@ -22,6 +27,8 @@ def _positive_int(value):
         raise argparse.ArgumentTypeError(f"invalid int value: {value!r}") from None
     if parsed <= 0:
         raise argparse.ArgumentTypeError(f"must be greater than 0, got {parsed}")
+    if maximum is not None and parsed > maximum:
+        raise argparse.ArgumentTypeError(f"must be at most {maximum}, got {parsed}")
     return parsed
 
 
@@ -83,9 +90,12 @@ def _run_scan(args):
     )
     if not report["signals_collected"]:
         # Nothing to judge. Exiting 0 here would read as "this account is clean".
+        # Merged PRs are what every signal is computed from, so an issue-only
+        # account lands here too: 0 issues is not a verdict either (#23).
         print(
             f"error: no signals collected for {report['username']} in the last "
-            f"{args.days} days (0 merged PRs, 0 issues); nothing was scanned",
+            f"{args.days} days (0 merged PRs, {report['issues_opened']} issues "
+            f"opened); nothing was scanned",
             file=sys.stderr,
         )
         return 1
@@ -104,7 +114,11 @@ def main():
     scan_parser.add_argument("username", help="GitHub username to scan")
     scan_parser.add_argument("--pr-threshold", type=_positive_int, default=10)
     scan_parser.add_argument("--trivial-ratio", type=_ratio, default=0.7)
-    scan_parser.add_argument("--days", type=_positive_int, default=30)
+    scan_parser.add_argument(
+        "--days",
+        type=lambda value: _positive_int(value, scanner.MAX_WINDOW_DAYS),
+        default=30,
+    )
     scan_parser.add_argument("--format", choices=["cli", "json", "sarif"], default="cli")
     scan_parser.add_argument("--output", help="Output file path")
 

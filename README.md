@@ -45,10 +45,8 @@ Known limits of the current implementation:
   100 merged PRs is truncated at 100.
 - Issue *comments*, reviews and discussions are not collected; "no follow-up"
   counts issues opened only.
-- An account with zero merged PRs but some issues opened reports `0.00 (LOW)`
-  and exits 0, because all five signals are PR-derived ([#23](https://github.com/yunaremaia/ai-reputation-guard/issues/23)).
-- `--days` has no upper bound; a very large window raises `OverflowError`
-  ([#22](https://github.com/yunaremaia/ai-reputation-guard/issues/22)).
+- `--days` is bounded at 3650 (ten years); a larger window is rejected as a
+  command-line error rather than overflowing the date arithmetic.
 
 ## Install
 
@@ -110,8 +108,9 @@ Note:           heuristic score, not a validated model (see README)
 | 2 | bad command line |
 
 `scan` never exits 0 without a report: a failed call and a window with zero
-merged PRs and zero issues are both errors, because a CI gate that treats them
-as success is worse than no gate.
+merged PRs are both errors, because a CI gate that treats them as success is
+worse than no gate. Issues opened do not make a window scannable on their own —
+all five signals are computed from merged pull requests.
 
 ## Architecture
 
